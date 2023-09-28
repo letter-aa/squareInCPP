@@ -37,6 +37,38 @@ void customDraw(HWND hwnd) {
     //---------------------------------
     EndPaint(hwnd, &ps);
 }
+auto newPixel(int x, int y, int size, int color) {
+    /*
+    2584
+    2588
+    2580
+    ////
+    254u
+    25AE
+    */
+    char pixel = 254u;
+    HANDLE Con = GetStdHandle(STD_OUTPUT_HANDLE);
+    for (int i = 0; i < y; i++) {
+        cout << "\n";
+    }
+    //SetConsoleTextAttribute(Con, 0);
+    for (int i = 0; i < x; i++) {
+        cout << " ";
+    }
+    SetConsoleTextAttribute(Con, color);
+    for (int i = 0; i < size; i++) {
+        cout << "\n";
+        for (int i = 0; i < x; i++) {
+            cout << "  ";
+        }
+        for (int i = 0; i < size; i++) {
+            cout << pixel;
+        }
+    }
+    SetConsoleTextAttribute(Con, 7);
+    struct pos { int x; int y; };
+    return pos{ x,y };
+}
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uint, WPARAM wp, LPARAM lp) {
     switch (uint) {
     case WM_CLOSE:
@@ -118,5 +150,5 @@ int WINAPI newWindow(string title, int sizeX, int sizeY, bool scrollingAndButton
 }
 int main()
 {
-    newWindow("square!!", 400, 400, true);
+    newWindow("square!!", 400, 400, false);
 }
