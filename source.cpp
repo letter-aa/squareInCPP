@@ -2,19 +2,45 @@
 #include <Windows.h>
 #include <gdiplus.h>
 #include <thread>
+#define PI 3.14159
 #pragma comment (lib,"Gdiplus.lib")
 using namespace Gdiplus;
 using namespace std;
+typedef struct { int x; int y; } pos;
+typedef struct { int x1; int x2; int y1; int y2; } posEx;
+pos center;
 void newLine(HWND hwnd, HDC hdc, Color color, float thickness, int x1, int y1, int x2, int y2) {
     Graphics graphics(hdc);
     Pen pen(color, thickness);
     graphics.DrawLine(&pen, x1, y1, x2, y2);
 }
+/////////////////////////////////////////////////
+void rotateSquare(HWND hwnd, HDC hdc, int rotation) {
+    newLine(hwnd, hdc, Color(255, 0, 0, 0), 1.5, 100, 100, 100, 200);
+    newLine(hwnd, hdc, Color(255, 0, 0, 0), 1.5, 100, 200, 200, 200);
+    newLine(hwnd, hdc, Color(255, 0, 0, 0), 1.5, 100, 100, 200, 100);
+    newLine(hwnd, hdc, Color(255, 0, 0, 0), 1.5, 200, 100, 200, 200);
+}
 void updateSize(HWND hwnd, int* pHeight, int* pWidth) {
-    RECT rect;
-    GetWindowRect(hwnd, &rect);
-    *pWidth = rect.right - rect.left;
-    *pHeight = rect.bottom - rect.top;
+    RECT clientRect;
+    RECT windowRect;
+    GetClientRect(hwnd, &clientRect);
+    GetWindowRect(hwnd, &windowRect);
+    *pWidth = (clientRect.right - clientRect.left) - ((windowRect.right - windowRect.left) - (clientRect.right - clientRect.left));
+    *pHeight = clientRect.bottom - clientRect.top;
+}
+void updateCenter(HWND hwnd) {
+    int height{ 0 }, width{ 0 };
+    updateSize(hwnd, &height, &width);
+    center.x = width / 2;
+    center.y = height / 2;
+}
+void newSquare(HWND hwnd, HDC hdc, int size, int x, int y, int thickness, Color color) {
+    size /= 2;
+    newLine(hwnd, hdc, color, thickness, x - size, x - size, x - size, x + size);
+    newLine(hwnd, hdc, color, thickness, x - size, x + size, x + size, x + size);
+    newLine(hwnd, hdc, color, thickness, x - size, x - size, x + size, x - size);
+    newLine(hwnd, hdc, color, thickness, x + size, x - size, x + size, x + size);
 }
 void coverScreen(HWND hwnd, HDC hdc, int brushColor){
     int width{ 0 }, height{ 0 };
@@ -25,49 +51,17 @@ void coverScreen(HWND hwnd, HDC hdc, int brushColor){
 void customDraw(HWND hwnd) {
     PAINTSTRUCT ps;
     HDC hdc = BeginPaint(hwnd, &ps);
+    updateCenter(hwnd);
+    //cout << center.x << "\n" << center.y;
     //------------------------------
-
-    newLine(hwnd, hdc, Color(255, 0, 0, 0), 1.5, 100, 100, 100, 200);
-    newLine(hwnd, hdc, Color(255, 0, 0, 0), 1.5, 100, 200, 200, 200);
-    newLine(hwnd, hdc, Color(255, 0, 0, 0), 1.5, 100, 100, 200, 100);
-    newLine(hwnd, hdc, Color(255, 0, 0, 0), 1.5, 200, 100, 200, 200);
+    
+    //newLine(hwnd, hdc, Color(255, 255, 0, 0), 10, center.x, center.y, center.x + 1, center.y + 1);
+    newSquare(hwnd, hdc, 100, center.x, center.y, 1, Color(255, 255, 0, 0));
     //Sleep(1000);
     //coverScreen(hwnd, hdc, WHITE_BRUSH);
 
     //---------------------------------
     EndPaint(hwnd, &ps);
-}
-auto newPixel(int x, int y, int size, int color) {
-    /*
-    2584
-    2588
-    2580
-    ////
-    254u
-    25AE
-    */
-    char pixel = 254u;
-    HANDLE Con = GetStdHandle(STD_OUTPUT_HANDLE);
-    for (int i = 0; i < y; i++) {
-        cout << "\n";
-    }
-    //SetConsoleTextAttribute(Con, 0);
-    for (int i = 0; i < x; i++) {
-        cout << " ";
-    }
-    SetConsoleTextAttribute(Con, color);
-    for (int i = 0; i < size; i++) {
-        cout << "\n";
-        for (int i = 0; i < x; i++) {
-            cout << "  ";
-        }
-        for (int i = 0; i < size; i++) {
-            cout << pixel;
-        }
-    }
-    SetConsoleTextAttribute(Con, 7);
-    struct pos { int x; int y; };
-    return pos{ x,y };
 }
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uint, WPARAM wp, LPARAM lp) {
     switch (uint) {
