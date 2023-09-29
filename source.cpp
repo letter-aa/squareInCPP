@@ -2,10 +2,12 @@
 #include <Windows.h>
 #include <gdiplus.h>
 #include <thread>
+#include "colorPixelTest.h"
 #define PI 3.14159
 #pragma comment (lib,"Gdiplus.lib")
 using namespace Gdiplus;
 using namespace std;
+typedef struct { HWND hwnd; HDC hdc; int size; int x; int y; int thickness; Color color; } squareProperty;
 typedef struct { int x; int y; } pos;
 typedef struct { int x1; int x2; int y1; int y2; } posEx;
 pos center;
@@ -15,11 +17,15 @@ void newLine(HWND hwnd, HDC hdc, Color color, float thickness, int x1, int y1, i
     graphics.DrawLine(&pen, x1, y1, x2, y2);
 }
 /////////////////////////////////////////////////
-void rotateSquare(HWND hwnd, HDC hdc, int rotation) {
-    newLine(hwnd, hdc, Color(255, 0, 0, 0), 1.5, 100, 100, 100, 200);
-    newLine(hwnd, hdc, Color(255, 0, 0, 0), 1.5, 100, 200, 200, 200);
-    newLine(hwnd, hdc, Color(255, 0, 0, 0), 1.5, 100, 100, 200, 100);
-    newLine(hwnd, hdc, Color(255, 0, 0, 0), 1.5, 200, 100, 200, 200);
+void rotateSquare(squareProperty sqPrpty, int rotation) {
+    HWND hwnd = sqPrpty.hwnd;
+    HDC hdc = sqPrpty.hdc;
+    Color color = sqPrpty.color;
+    int thickness = sqPrpty.thickness;
+    newLine(hwnd, hdc, color, thickness, 100, 100, 100, 200);
+    newLine(hwnd, hdc, color, thickness, 100, 200, 200, 200);
+    newLine(hwnd, hdc, color, thickness, 100, 100, 200, 100);
+    newLine(hwnd, hdc, color, thickness, 200, 100, 200, 200);
 }
 void updateSize(HWND hwnd, int* pHeight, int* pWidth) {
     RECT clientRect;
@@ -36,14 +42,45 @@ void updateCenter(HWND hwnd) {
     center.x = width / 2;
     center.y = height / 2;
 }
-void newSquare(HWND hwnd, HDC hdc, int size, int x, int y, int thickness, Color color) { //posEx pos1, posEx pos2, posEx pos3, posEx po4
+void newSquare(squareProperty sqPrpty, posEx pos1, posEx pos2, posEx pos3, posEx pos4) {
+    int size = sqPrpty.size;
+    HWND hwnd = sqPrpty.hwnd;
+    HDC hdc = sqPrpty.hdc;
+    Color color = sqPrpty.color;
+    int thickness = sqPrpty.thickness;
+    int x = sqPrpty.x;
+    int y = sqPrpty.y;
     size /= 2;
-    newLine(hwnd, hdc, color, thickness, x - size, y - size, x - size, y + size);
-    newLine(hwnd, hdc, color, thickness, x - size, y - size, x - size, y + size);
-    newLine(hwnd, hdc, color, thickness, x - size, y + size, x + size, y + size);
-    newLine(hwnd, hdc, color, thickness, x - size, y - size, x + size, y - size);
-    newLine(hwnd, hdc, color, thickness, x + size, y - size, x + size, y + size);
+    if (!pos1.x1 == NULL) {
+        newLine(hwnd, hdc, color, thickness, pos1.x1, pos1.y1, pos1.x2, pos1.y2);
+    }
+    else {
+        newLine(hwnd, hdc, color, thickness, x - size, y - size, x - size, y + size);
+    }
+
+    if (!pos2.x1 == NULL) {
+        newLine(hwnd, hdc, color, thickness, pos2.x1, pos2.y1, pos2.x2, pos2.y2);
+    }
+    else {
+        newLine(hwnd, hdc, color, thickness, x - size, y + size, x + size, y + size);
+    }
+
+    if (!pos3.x1 == NULL) {
+        newLine(hwnd, hdc, color, thickness, pos3.x1, pos3.y1, pos3.x2, pos3.y2);
+    }
+    else {
+        newLine(hwnd, hdc, color, thickness, x - size, y - size, x + size, y - size);
+    }
+
+    if (!pos4.x1 == NULL) {
+        newLine(hwnd, hdc, color, thickness, pos4.x1, pos4.y1, pos4.x2, pos4.y2);
+    }
+    else {
+        newLine(hwnd, hdc, color, thickness, x + size, y - size, x + size, y + size);
+    }
 }
+
+
 void coverScreen(HWND hwnd, HDC hdc, int brushColor){
     int width{ 0 }, height{ 0 };
     updateSize(hwnd, &height, &width);
@@ -55,47 +92,21 @@ void customDraw(HWND hwnd) {
     HDC hdc = BeginPaint(hwnd, &ps);
     updateCenter(hwnd);
     cout << center.x << "\n" << center.y;
+    squareProperty sqPrpty1{ hwnd, hdc, 100, center.x, center.y, 1, Color(255, 255, 0, 0) };
+    posEx pos1, pos2, pos3, pos4;
+    pos1 = { NULL,NULL,NULL,NULL };
+    pos2 = { NULL,NULL,NULL,NULL };
+    pos3 = { NULL,NULL,NULL,NULL };
+    pos4 = { NULL,NULL,NULL,NULL };
     //------------------------------
     
     //newLine(hwnd, hdc, Color(255, 255, 0, 0), 10, center.x, center.y, center.x + 1, center.y + 1);
-    newSquare(hwnd, hdc, 100, center.x, center.y, 1, Color(255, 255, 0, 0));
+    newSquare(sqPrpty1,pos1, pos2, pos3, pos4);
     //Sleep(1000);
     //coverScreen(hwnd, hdc, WHITE_BRUSH);
 
     //---------------------------------
     EndPaint(hwnd, &ps);
-}
-auto newPixel(int x, int y, int size, int color) {
-    /*
-    2584
-    2588
-    2580
-    ////
-    254u
-    25AE
-    */
-    char pixel = 254u;
-    HANDLE Con = GetStdHandle(STD_OUTPUT_HANDLE);
-    for (int i = 0; i < y; i++) {
-        cout << "\n";
-    }
-    //SetConsoleTextAttribute(Con, 0);
-    for (int i = 0; i < x; i++) {
-        cout << " ";
-    }
-    SetConsoleTextAttribute(Con, color);
-    for (int i = 0; i < size; i++) {
-        cout << "\n";
-        for (int i = 0; i < x; i++) {
-            cout << "  ";
-        }
-        for (int i = 0; i < size; i++) {
-            cout << pixel;
-        }
-    }
-    SetConsoleTextAttribute(Con, 7);
-    struct pos { int x; int y; };
-    return pos{ x,y };
 }
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uint, WPARAM wp, LPARAM lp) {
     switch (uint) {
@@ -140,7 +151,7 @@ int WINAPI newWindow(string title, int sizeX, int sizeY, bool scrollingAndButton
     wc.lpfnWndProc = WindowProc;
 
     if (!RegisterClassEx(&wc)) {
-        MessageBox(NULL, TEXT("Registering window class failed! Please try again."), TEXT("An error has occured!"), NULL);
+        MessageBox(NULL, TEXT("Registering window class failed!"), TEXT("An error has occured!"), NULL);
         return 1;
     }
 
@@ -160,7 +171,7 @@ int WINAPI newWindow(string title, int sizeX, int sizeY, bool scrollingAndButton
     );
 
     if (!hwnd) {
-        MessageBox(NULL, TEXT("Window does not exist!"), TEXT("An error has occured!"), NULL);
+        MessageBox(NULL, TEXT("Window could not be created!"), TEXT("An error has occured!"), NULL);
         return 1;
     }
 
