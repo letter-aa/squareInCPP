@@ -8,7 +8,7 @@ using namespace Gdiplus;
 using namespace std;
 typedef struct { HWND hwnd; HDC hdc; int size; int x; int y; int thickness; Color color; } squareProperty;
 typedef struct { int x; int y; } pos;
-typedef struct { int x1; int x2; int y1; int y2; } posEx;
+typedef struct { int x1; int y1; int x2; int y2; } posEx;
 pos center;
 void newLine(HWND hwnd, HDC hdc, Color color, float thickness, int x1, int y1, int x2, int y2) {
     Graphics graphics(hdc);
@@ -16,16 +16,6 @@ void newLine(HWND hwnd, HDC hdc, Color color, float thickness, int x1, int y1, i
     graphics.DrawLine(&pen, x1, y1, x2, y2);
 }
 /////////////////////////////////////////////////
-void rotateSquare(squareProperty sqPrpty, int rotation) {
-    HWND hwnd = sqPrpty.hwnd;
-    HDC hdc = sqPrpty.hdc;
-    Color color = sqPrpty.color;
-    int thickness = sqPrpty.thickness;
-    newLine(hwnd, hdc, color, thickness, 100, 100, 100, 200);
-    newLine(hwnd, hdc, color, thickness, 100, 200, 200, 200);
-    newLine(hwnd, hdc, color, thickness, 100, 100, 200, 100);
-    newLine(hwnd, hdc, color, thickness, 200, 100, 200, 200);
-}
 void updateSize(HWND hwnd, int* pHeight, int* pWidth) {
     RECT clientRect;
     RECT windowRect;
@@ -41,7 +31,7 @@ void updateCenter(HWND hwnd) {
     center.x = width / 2;
     center.y = height / 2;
 }
-void newSquare(squareProperty sqPrpty, posEx pos1, posEx pos2, posEx pos3, posEx pos4) {
+void newSquare(squareProperty sqPrpty, posEx left, posEx bottom, posEx top, posEx right) {
     int size = sqPrpty.size;
     HWND hwnd = sqPrpty.hwnd;
     HDC hdc = sqPrpty.hdc;
@@ -50,29 +40,29 @@ void newSquare(squareProperty sqPrpty, posEx pos1, posEx pos2, posEx pos3, posEx
     int x = sqPrpty.x;
     int y = sqPrpty.y;
     size /= 2;
-    if (!pos1.x1 == NULL) {
-        newLine(hwnd, hdc, color, thickness, pos1.x1, pos1.y1, pos1.x2, pos1.y2);
+    if (!(left.x1 == NULL && left.x2 == NULL && left.y1 == NULL && left.y2 == NULL)) {
+        newLine(hwnd, hdc, color, thickness, left.x1, left.y1, left.x2, left.y2);
     }
     else {
         newLine(hwnd, hdc, color, thickness, x - size, y - size, x - size, y + size);
     }
 
-    if (!pos2.x1 == NULL) {
-        newLine(hwnd, hdc, color, thickness, pos2.x1, pos2.y1, pos2.x2, pos2.y2);
+    if (!(bottom.x1 == NULL && bottom.x2 == NULL && bottom.y1 == NULL && bottom.y2 == NULL)) {
+        newLine(hwnd, hdc, color, thickness, bottom.x1, bottom.y1, bottom.x2, bottom.y2);
     }
     else {
         newLine(hwnd, hdc, color, thickness, x - size, y + size, x + size, y + size);
     }
 
-    if (!pos3.x1 == NULL) {
-        newLine(hwnd, hdc, color, thickness, pos3.x1, pos3.y1, pos3.x2, pos3.y2);
+    if (!(top.x1 == NULL && top.x2 == NULL && top.y1 == NULL && top.y2 == NULL)) {
+        newLine(hwnd, hdc, color, thickness, top.x1, top.y1, top.x2, top.y2);
     }
     else {
         newLine(hwnd, hdc, color, thickness, x - size, y - size, x + size, y - size);
     }
 
-    if (!pos4.x1 == NULL) {
-        newLine(hwnd, hdc, color, thickness, pos4.x1, pos4.y1, pos4.x2, pos4.y2);
+    if (!(right.x1 == NULL && right.x2 == NULL && right.y1 == NULL && right.y2 == NULL)) {
+        newLine(hwnd, hdc, color, thickness, right.x1, right.y1, right.x2, right.y2);
     }
     else {
         newLine(hwnd, hdc, color, thickness, x + size, y - size, x + size, y + size);
@@ -86,26 +76,75 @@ void coverScreen(HWND hwnd, HDC hdc, int brushColor){
     SelectObject(hdc, GetStockObject(brushColor));
     Rectangle(hdc, 0, 0, width, height);
 }
+void rotateSquare(HWND hwnd, HDC hdc, squareProperty sqPrpty, int rotation) {
+    coverScreen(hwnd, hdc, WHITE_BRUSH);
+    if ((rotation / 180) >= 1) {
+        rotation = rotation - 180 * floor(rotation / 180);
+    }
+    else if ((rotation / -180) >= -1) {
+        rotation = rotation - -180 * floor(rotation / -180);
+    }
+    Color color = sqPrpty.color;
+    int thickness = sqPrpty.thickness;
+    if (rotation < 0) {
+        newLine(hwnd, hdc, color, thickness, 100, 100, 100, 200);
+        newLine(hwnd, hdc, color, thickness, 100, 200, 200, 200);
+        newLine(hwnd, hdc, color, thickness, 100, 100, 200, 100);
+        newLine(hwnd, hdc, color, thickness, 200, 100, 200, 200);
+    }
+}
 void customDraw(HWND hwnd) {
     PAINTSTRUCT ps;
     HDC hdc = BeginPaint(hwnd, &ps);
     updateCenter(hwnd);
     cout << center.x << "\n" << center.y;
     squareProperty sqPrpty1{ hwnd, hdc, 100, center.x, center.y, 1, Color(255, 255, 0, 0) };
-    posEx pos1, pos2, pos3, pos4;
-    pos1 = { NULL,NULL,NULL,NULL };
-    pos2 = { NULL,NULL,NULL,NULL };
-    pos3 = { NULL,NULL,NULL,NULL };
-    pos4 = { NULL,NULL,NULL,NULL };
+    posEx left, bottom, top, right;
+    left = { NULL,NULL,NULL,NULL };
+    bottom = { NULL,NULL,NULL,NULL };
+    top = { NULL,NULL,NULL,NULL };
+    right = { NULL,NULL,NULL,NULL };
     //------------------------------
     
     //newLine(hwnd, hdc, Color(255, 255, 0, 0), 10, center.x, center.y, center.x + 1, center.y + 1);
-    newSquare(sqPrpty1,pos1, pos2, pos3, pos4);
+    newSquare(sqPrpty1,left, bottom, top, right);
     //Sleep(1000);
     //coverScreen(hwnd, hdc, WHITE_BRUSH);
 
     //---------------------------------
     EndPaint(hwnd, &ps);
+}
+auto newPixel(int x, int y, int size, int color) {
+    /*
+    2584
+    2588
+    2580
+    ////
+    254u
+    25AE
+    */
+    char pixel = 254u;
+    HANDLE Con = GetStdHandle(STD_OUTPUT_HANDLE);
+    for (int i = 0; i < y; i++) {
+        cout << "\n";
+    }
+    //SetConsoleTextAttribute(Con, 0);
+    for (int i = 0; i < x; i++) {
+        cout << " ";
+    }
+    SetConsoleTextAttribute(Con, color);
+    for (int i = 0; i < size; i++) {
+        cout << "\n";
+        for (int i = 0; i < x; i++) {
+            cout << "  ";
+        }
+        for (int i = 0; i < size; i++) {
+            cout << pixel;
+        }
+    }
+    SetConsoleTextAttribute(Con, 7);
+    struct pos { int x; int y; };
+    return pos{ x,y };
 }
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uint, WPARAM wp, LPARAM lp) {
     switch (uint) {
