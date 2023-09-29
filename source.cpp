@@ -2,7 +2,6 @@
 #include <Windows.h>
 #include <gdiplus.h>
 #include <thread>
-#include "colorPixelTest.h"
 #define PI 3.14159
 #pragma comment (lib,"Gdiplus.lib")
 using namespace Gdiplus;
