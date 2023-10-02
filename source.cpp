@@ -6,9 +6,9 @@
 #pragma comment (lib,"Gdiplus.lib")
 using namespace Gdiplus;
 using namespace std;
-typedef struct { HWND hwnd; HDC hdc; int size; int x; int y; int thickness; Color color; } squareProperty;
 typedef struct { int x; int y; } pos;
 typedef struct { int x1; int y1; int x2; int y2; } posEx;
+typedef struct { HWND hwnd; HDC hdc; int size; int x; int y; int thickness; Color color; posEx left; posEx bottom; posEx top; posEx right; } square;
 pos center;
 void newLine(HWND hwnd, HDC hdc, Color color, float thickness, int x1, int y1, int x2, int y2) {
     Graphics graphics(hdc);
@@ -16,29 +16,40 @@ void newLine(HWND hwnd, HDC hdc, Color color, float thickness, int x1, int y1, i
     graphics.DrawLine(&pen, x1, y1, x2, y2);
 }
 /////////////////////////////////////////////////
-void updateSize(HWND hwnd, int* pHeight, int* pWidth) {
+void updateSize(HWND hwnd, int* pHeight, int* pWidth, int windowOrClient) {
     RECT clientRect;
     RECT windowRect;
     GetClientRect(hwnd, &clientRect);
     GetWindowRect(hwnd, &windowRect);
-    *pWidth = (clientRect.right - clientRect.left) - ((windowRect.right - windowRect.left) - (clientRect.right - clientRect.left));
-    //*pWidth = windowRect.right - windowRect.left;
-    *pHeight = clientRect.bottom - clientRect.top;
+    if (windowOrClient == 0) {
+        *pWidth = windowRect.right - windowRect.left;
+        //*pWidth = windowRect.right - windowRect.left;
+        *pHeight = windowRect.bottom - windowRect.top;
+    }
+    if (windowOrClient == 1) {
+        *pWidth = (clientRect.right - clientRect.left) - ((windowRect.right - windowRect.left) - (clientRect.right - clientRect.left));
+        //*pWidth = windowRect.right - windowRect.left;
+        *pHeight = clientRect.bottom - clientRect.top;
+    }
 }
 void updateCenter(HWND hwnd) {
     int height{ 0 }, width{ 0 };
-    updateSize(hwnd, &height, &width);
+    updateSize(hwnd, &height, &width,1);
     center.x = width / 2;
     center.y = height / 2;
 }
-void newSquare(squareProperty sqPrpty, posEx left, posEx bottom, posEx top, posEx right) {
-    int size = sqPrpty.size;
-    HWND hwnd = sqPrpty.hwnd;
-    HDC hdc = sqPrpty.hdc;
-    Color color = sqPrpty.color;
-    int thickness = sqPrpty.thickness;
-    int x = sqPrpty.x;
-    int y = sqPrpty.y;
+void newSquare(square square) {
+    int size = square.size;
+    HWND hwnd = square.hwnd;
+    HDC hdc = square.hdc;
+    Color color = square.color;
+    int thickness = square.thickness;
+    int x = square.x;
+    int y = square.y;
+    posEx left = square.left;
+    posEx bottom = square.bottom;
+    posEx top = square.top;
+    posEx right = square.right;
     size /= 2;
     if (!(left.x1 == NULL && left.x2 == NULL && left.y1 == NULL && left.y2 == NULL)) {
         newLine(hwnd, hdc, color, thickness, left.x1, left.y1, left.x2, left.y2);
@@ -72,25 +83,28 @@ void newSquare(squareProperty sqPrpty, posEx left, posEx bottom, posEx top, posE
 
 void coverScreen(HWND hwnd, HDC hdc, int brushColor){
     int width{ 0 }, height{ 0 };
-    updateSize(hwnd, &height, &width);
+    updateSize(hwnd, &height, &width,0);
     SelectObject(hdc, GetStockObject(brushColor));
     Rectangle(hdc, 0, 0, width, height);
 }
-void rotateSquare(HWND hwnd, HDC hdc, squareProperty sqPrpty, int rotation) {
-    coverScreen(hwnd, hdc, WHITE_BRUSH);
+void rotateSquare(HWND hwnd, HDC hdc, square square, int rotation) {
+    coverScreen(hwnd, hdc,WHITE_BRUSH);
     if ((rotation / 180) >= 1) {
         rotation = rotation - 180 * floor(rotation / 180);
     }
     else if ((rotation / -180) >= -1) {
         rotation = rotation - -180 * floor(rotation / -180);
     }
-    Color color = sqPrpty.color;
-    int thickness = sqPrpty.thickness;
-    if (rotation < 0) {
-        newLine(hwnd, hdc, color, thickness, 100, 100, 100, 200);
-        newLine(hwnd, hdc, color, thickness, 100, 200, 200, 200);
-        newLine(hwnd, hdc, color, thickness, 100, 100, 200, 100);
-        newLine(hwnd, hdc, color, thickness, 200, 100, 200, 200);
+    Color color = square.color;
+    int thickness = square.thickness;
+    if (rotation > 0) {
+        if (rotation == 90) {
+            int size = square.size;
+            int x = square.x;
+            int y = square.y;
+            size /= 2;
+            newLine(hwnd, hdc, square.color, square.thickness, x, y + (size + (size / 3)), x, y - (size + (size / 3)));
+        }
     }
 }
 void customDraw(HWND hwnd) {
@@ -98,16 +112,22 @@ void customDraw(HWND hwnd) {
     HDC hdc = BeginPaint(hwnd, &ps);
     updateCenter(hwnd);
     cout << center.x << "\n" << center.y;
-    squareProperty sqPrpty1{ hwnd, hdc, 100, center.x, center.y, 1, Color(255, 255, 0, 0) };
+    square square1{ hwnd, hdc, 100, center.x, center.y, 1, Color(255, 255, 0, 0) };
     posEx left, bottom, top, right;
     left = { NULL,NULL,NULL,NULL };
     bottom = { NULL,NULL,NULL,NULL };
     top = { NULL,NULL,NULL,NULL };
     right = { NULL,NULL,NULL,NULL };
+    square1.left = left;
+    square1.bottom = bottom;
+    square1.top = top;
+    square1.right = right;
     //------------------------------
     
     //newLine(hwnd, hdc, Color(255, 255, 0, 0), 10, center.x, center.y, center.x + 1, center.y + 1);
-    newSquare(sqPrpty1,left, bottom, top, right);
+    newSquare(square1);
+    Sleep(2500);
+    rotateSquare(hwnd, hdc, square1, 90);
     //Sleep(1000);
     //coverScreen(hwnd, hdc, WHITE_BRUSH);
 
